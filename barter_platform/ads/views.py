@@ -6,10 +6,11 @@ from rest_framework.permissions import IsAuthenticated
 
 # Create your views here.
 
+
 class AdListCreateView(ListCreateAPIView):
-    """
-    View to list and create ads.
-    """
     queryset = Ad.objects.all()
     serializer_class = AdSerializer
     permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

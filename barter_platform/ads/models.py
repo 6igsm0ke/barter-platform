@@ -1,5 +1,4 @@
 from django.db import models
-from users.models import User
 # Create your models here.
 
 class Category(models.Model):
@@ -18,7 +17,7 @@ class Condition(models.Model):
     
 class Ad(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.ForeignKey('User', on_delete=models.CASCADE) 
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE) 
     title = models.CharField(max_length=255)
     description = models.TextField()
     image_url = models.URLField(max_length=255, blank=True, null=True)
