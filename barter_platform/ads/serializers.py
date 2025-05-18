@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Ad, Category, Condition
+from .models import Ad, Category, Condition, ExchangeProposal
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -35,6 +35,22 @@ class AdSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        data["category"] = CategorySerializer(instance.type).data
+        data["category"] = CategorySerializer(instance.category).data
         data["condition"] = ConditionSerializer(instance.condition).data
         return data
+
+class ProposalSerializer(serializers.ModelSerializer):
+    ad_sender = serializers.PrimaryKeyRelatedField(queryset=Ad.objects.all())
+    ad_receiver = serializers.PrimaryKeyRelatedField(queryset=Ad.objects.all())
+
+    class Meta:
+        model = ExchangeProposal
+        fields = [
+            "id",
+            "ad_sender",
+            "ad_receiver",
+            "comment",
+            "status",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at", "status"]

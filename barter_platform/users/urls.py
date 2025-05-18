@@ -12,6 +12,6 @@ urlpatterns = router.urls
 
 urlpatterns += [
     path("register/", UserCreateView.as_view(), name="user_create"),
-    path("login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("login/", TokenObtainPairView.as_view(), name="get_token"),
+    path("refresh/", TokenRefreshView.as_view(), name="refresh_token"),
 ]

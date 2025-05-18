@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register</title>
+  <link rel="stylesheet" href="register.css">
+</head>
+<body>
+  <div class="register-container">
+    <h2>Register</h2>
+    <form id="registerForm">
+      <input type="text" id="first_name" placeholder="First Name" required>
+      <input type="text" id="last_name" placeholder="Last Name" required>
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <p>Already have an account? <a href="login.html">Sign in</a></p>
+      <button type="submit">Register</button>
+    </form>
+    <p id="message"></p>
+  </div>
+
+  <script>
+    const form = document.getElementById("registerForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const userData = {
+        first_name: document.getElementById("first_name").value,
+        last_name: document.getElementById("last_name").value,
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value
+      };
+
+      try {
+        const response = await fetch("http://localhost:8000/api/v1/auth/register/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(userData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          message.innerText = "✅ Registered successfully!";
+          message.style.color = "green";
+          form.reset();
+        } else {
+          message.innerText = "❌ " + (data.error || "Registration failed");
+          message.style.color = "red";
+        }
+
+      } catch (err) {
+        message.innerText = "❌ Network error.";
+        message.style.color = "red";
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
