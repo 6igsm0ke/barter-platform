@@ -50,7 +50,6 @@
         });
         const user = await res.json();
         currentUserId = user.id;
-        console.log("Current user ID:", currentUserId);
       }
 
       async function fetchAdDetails() {
@@ -61,7 +60,6 @@
           }
         );
         const ad = await res.json();
-        console.log("Ad details:", ad);
         document.getElementById("adReceiverInput").value = ad.id;
 
         const adDiv = document.getElementById("adDetail");
@@ -76,7 +74,6 @@
   `;
 
         const adOwnerId = ad.user
-        console.log("Ad owner ID:", adOwnerId);
 
         if (currentUserId === adOwnerId) {
           document.getElementById("ownerSection").style.display = "block";
