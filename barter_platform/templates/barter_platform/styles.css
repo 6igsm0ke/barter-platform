@@ -166,3 +166,25 @@ button:hover {
 #deleteBtn:hover {
   background-color: #c82333;
 }
+
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 20px;
+  background-color: #f9f9f9;
+}
+
+#logoutBtn {
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#logoutBtn:hover {
+  background-color: #d9363e;
+}

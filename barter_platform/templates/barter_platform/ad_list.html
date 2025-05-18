@@ -7,6 +7,9 @@
   </head>
   <body>
     <div class="container">
+      <div class="top-bar">
+        <button id="logoutBtn">Logout</button>
+      </div>
       <h1>Ad List</h1>
 
       <a href="ad_create.html">
@@ -14,7 +17,12 @@
       </a>
 
       <div class="filters">
-        <input type="text" id="searchInput" placeholder="Search by title or description..." style="flex: 2;" />
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search by title or description..."
+          style="flex: 2"
+        />
 
         <select id="categoryFilter">
           <option value="">All Categories</option>
@@ -28,7 +36,7 @@
       </div>
 
       <div id="ads">Loading...</div>
-      <div id="error" style="color: red;"></div>
+      <div id="error" style="color: red"></div>
     </div>
 
     <script>
@@ -65,9 +73,12 @@
       async function loadFilters() {
         const token = localStorage.getItem("access");
 
-        const categoryRes = await fetch("http://localhost:8000/api/v1/ads/categories/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const categoryRes = await fetch(
+          "http://localhost:8000/api/v1/ads/categories/",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         const categoryData = await categoryRes.json();
         const categorySelect = document.getElementById("categoryFilter");
         (categoryData.results || categoryData).forEach((c) => {
@@ -77,9 +88,12 @@
           categorySelect.appendChild(opt);
         });
 
-        const conditionRes = await fetch("http://localhost:8000/api/v1/ads/conditions/", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const conditionRes = await fetch(
+          "http://localhost:8000/api/v1/ads/conditions/",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         const conditionData = await conditionRes.json();
         const conditionSelect = document.getElementById("conditionFilter");
         (conditionData.results || conditionData).forEach((c) => {
@@ -105,21 +119,27 @@
         if (condition) query.append("condition", condition);
 
         try {
-          let res = await fetch(`http://localhost:8000/api/v1/ads/ads/?${query.toString()}`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (res.status === 401) {
-            token = await refreshToken();
-            res = await fetch(`http://localhost:8000/api/v1/ads/ads/?${query.toString()}`, {
+          let res = await fetch(
+            `http://localhost:8000/api/v1/ads/ads/?${query.toString()}`,
+            {
               headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
               },
-            });
+            }
+          );
+
+          if (res.status === 401) {
+            token = await refreshToken();
+            res = await fetch(
+              `http://localhost:8000/api/v1/ads/ads/?${query.toString()}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
           }
 
           if (!res.ok) {
@@ -154,7 +174,11 @@
               <p><strong>Category:</strong> ${ad.category.name}</p>
               <p><strong>Condition:</strong> ${ad.condition.name}</p>
               <p>${ad.description}</p>
-              ${ad.image_url ? `<img src="${ad.image_url}" alt="image" style="max-width: 200px;">` : ""}
+              ${
+                ad.image_url
+                  ? `<img src="${ad.image_url}" alt="image" style="max-width: 200px;">`
+                  : ""
+              }
               <br>
               <a href="ad_detail.html?id=${ad.id}">
                 <button type="button">View Details</button>
@@ -173,6 +197,11 @@
       getCurrentUserId().then(() => {
         loadFilters();
         fetchAds();
+      });
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("access");
+        localStorage.removeItem("refresh");
+        window.location.href = "login.html";
       });
     </script>
   </body>
