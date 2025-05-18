@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ad List</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Ad List</h1>
+
+      <a href="ad_create.html">
+        <button type="button">Create New Ad</button>
+      </a>
+
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search by title or description..." style="flex: 2;" />
+
+        <select id="categoryFilter">
+          <option value="">All Categories</option>
+        </select>
+
+        <select id="conditionFilter">
+          <option value="">All Conditions</option>
+        </select>
+
+        <button onclick="fetchAds()">Apply Filters</button>
+      </div>
+
+      <div id="ads">Loading...</div>
+      <div id="error" style="color: red;"></div>
+    </div>
+
+    <script>
+      let currentUserId = null;
+
+      async function refreshToken() {
+        const refresh = localStorage.getItem("refresh");
+        if (!refresh) throw new Error("No refresh token found");
+
+        const res = await fetch("http://localhost:8000/api/v1/auth/refresh/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh }),
+        });
+
+        if (!res.ok) throw new Error("Failed to refresh token");
+
+        const data = await res.json();
+        localStorage.setItem("access", data.access);
+        return data.access;
+      }
+
+      async function getCurrentUserId() {
+        const token = localStorage.getItem("access");
+        const res = await fetch("http://localhost:8000/api/v1/auth/users/me/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const user = await res.json();
+          currentUserId = user.id;
+        }
+      }
+
+      async function loadFilters() {
+        const token = localStorage.getItem("access");
+
+        const categoryRes = await fetch("http://localhost:8000/api/v1/ads/categories/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const categoryData = await categoryRes.json();
+        const categorySelect = document.getElementById("categoryFilter");
+        (categoryData.results || categoryData).forEach((c) => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          categorySelect.appendChild(opt);
+        });
+
+        const conditionRes = await fetch("http://localhost:8000/api/v1/ads/conditions/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const conditionData = await conditionRes.json();
+        const conditionSelect = document.getElementById("conditionFilter");
+        (conditionData.results || conditionData).forEach((c) => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          conditionSelect.appendChild(opt);
+        });
+      }
+
+      async function fetchAds() {
+        let token = localStorage.getItem("access");
+        const container = document.getElementById("ads");
+        const errorBlock = document.getElementById("error");
+
+        const search = document.getElementById("searchInput").value.trim();
+        const category = document.getElementById("categoryFilter").value;
+        const condition = document.getElementById("conditionFilter").value;
+
+        const query = new URLSearchParams();
+        if (search) query.append("search", search);
+        if (category) query.append("category", category);
+        if (condition) query.append("condition", condition);
+
+        try {
+          let res = await fetch(`http://localhost:8000/api/v1/ads/ads/?${query.toString()}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (res.status === 401) {
+            token = await refreshToken();
+            res = await fetch(`http://localhost:8000/api/v1/ads/ads/?${query.toString()}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+          }
+
+          if (!res.ok) {
+            throw new Error(`Failed to fetch data: ${res.status}`);
+          }
+
+          const raw = await res.text();
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            throw new Error("Invalid JSON received");
+          }
+
+          const ads = data.results || data;
+          if (!Array.isArray(ads)) {
+            throw new Error("Expected an array of ads, got something else.");
+          }
+
+          container.innerHTML = "";
+
+          if (ads.length === 0) {
+            container.innerHTML = "<p>No ads available yet.</p>";
+            return;
+          }
+
+          ads.forEach((ad) => {
+            const div = document.createElement("div");
+            div.classList.add("ad");
+            div.innerHTML = `
+              <h3>${ad.title}</h3>
+              <p><strong>Category:</strong> ${ad.category.name}</p>
+              <p><strong>Condition:</strong> ${ad.condition.name}</p>
+              <p>${ad.description}</p>
+              ${ad.image_url ? `<img src="${ad.image_url}" alt="image" style="max-width: 200px;">` : ""}
+              <br>
+              <a href="ad_detail.html?id=${ad.id}">
+                <button type="button">View Details</button>
+              </a>
+              <hr>
+            `;
+            container.appendChild(div);
+          });
+        } catch (err) {
+          container.innerHTML = "";
+          errorBlock.textContent = "Error: " + err.message;
+          console.error(err);
+        }
+      }
+
+      getCurrentUserId().then(() => {
+        loadFilters();
+        fetchAds();
+      });
+    </script>
+  </body>
+</html>

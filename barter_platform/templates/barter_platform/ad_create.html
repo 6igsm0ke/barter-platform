@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Create ad</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <a href="ad_detail.html?id=" id="backLink">&larr; Back</a>
+
+      <h2>Create ad</h2>
+
+      <form id="adForm">
+        <input type="text" name="title" placeholder="Title" required />
+        <textarea
+          name="description"
+          placeholder="Description"
+          required
+        ></textarea>
+        <input
+          type="url"
+          name="image_url"
+          placeholder="URL of image (optional)"
+        />
+        <p>Category</p>
+        <select name="category" id="categorySelect" required>
+          <option disabled selected>Select category</option>
+        </select>
+        <p>Condition</p>
+        <select name="condition" id="conditionSelect" required>
+          <option disabled selected>Select condition</option>
+        </select>
+
+        <button type="submit">Create</button>
+      </form>
+
+      <p id="message"></p>
+    </div>
+
+    <script>
+      async function refreshToken() {
+        const refresh = localStorage.getItem("refresh");
+        if (!refresh) throw new Error("No refresh token found");
+
+        const res = await fetch("http://localhost:8000/api/v1/auth/refresh/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh }),
+        });
+
+        if (!res.ok) throw new Error("Failed to refresh token");
+
+        const data = await res.json();
+        localStorage.setItem("access", data.access);
+        return data.access;
+      }
+      document.addEventListener("DOMContentLoaded", () => {
+        const token = localStorage.getItem("access");
+        const categorySelect = document.getElementById("categorySelect");
+        const conditionSelect = document.getElementById("conditionSelect");
+        const message = document.getElementById("message");
+
+        if (!token) {
+          alert("You need to log in first.");
+          return;
+        }
+
+        function populateSelect(url, select) {
+          fetch(url)
+            .then((res) => res.json())
+            .then((data) => {
+              const items = data.results || data;
+              select.innerHTML = "<option disabled selected>Select</option>";
+              items.forEach((item) => {
+                const option = document.createElement("option");
+                option.value = item.id;
+                option.textContent = item.name;
+                select.appendChild(option);
+              });
+            })
+            .catch((err) => {
+              console.error("Error loading data:", err);
+              message.textContent = "Error loading data";
+            });
+        }
+
+        populateSelect(
+          "http://localhost:8000/api/v1/ads/categories/",
+          categorySelect
+        );
+        populateSelect(
+          "http://localhost:8000/api/v1/ads/conditions/",
+          conditionSelect
+        );
+
+        document
+          .getElementById("adForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const body = Object.fromEntries(formData.entries());
+
+            try {
+              const res = await fetch("http://localhost:8000/api/v1/ads/ads/", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(body),
+              });
+
+              const result = await res.json();
+
+              if (res.ok) {
+                message.textContent = "Ad created successfully!";
+                message.style.color = "green";
+                e.target.reset();
+              } else {
+                message.textContent = "Error: " + JSON.stringify(result);
+                message.style.color = "red";
+              }
+            } catch (err) {
+              message.textContent = "Network error.";
+              message.style.color = "red";
+            }
+          });
+      });
+    </script>
+  </body>
+</html>

@@ -39,9 +39,16 @@ class AdSerializer(serializers.ModelSerializer):
         data["condition"] = ConditionSerializer(instance.condition).data
         return data
 
+
+class AdShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ad
+        fields = ["id", "title"]
+
+
 class ProposalSerializer(serializers.ModelSerializer):
-    ad_sender = serializers.PrimaryKeyRelatedField(queryset=Ad.objects.all())
-    ad_receiver = serializers.PrimaryKeyRelatedField(queryset=Ad.objects.all())
+    ad_sender = AdShortSerializer()
+    ad_receiver = AdShortSerializer()
 
     class Meta:
         model = ExchangeProposal

@@ -1,8 +1,13 @@
 from django.shortcuts import render
 from rest_framework import generics, filters, viewsets, permissions
 from django.db import models
-from .models import Ad, ExchangeProposal
-from .serializers import AdSerializer, ProposalSerializer
+from .models import Ad, ExchangeProposal, Category, Condition
+from .serializers import (
+    AdSerializer,
+    ProposalSerializer,
+    CategorySerializer,
+    ConditionSerializer,
+)
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
@@ -24,9 +29,6 @@ class AdViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
-    def get_queryset(self):
-        return self.queryset.filter(user=self.request.user)
 
     def perform_update(self, serializer):
         if serializer.instance.user != self.request.user:
@@ -61,10 +63,10 @@ class ExchangeProposalViewSet(viewsets.ModelViewSet):
         serializer.save()
 
     def get_queryset(self):
-        user = self.request.user
-        return self.queryset.filter(
-            models.Q(ad_sender__user=user) | models.Q(ad_receiver__user=user)
-        )
+        ad_receiver_id = self.request.query_params.get("ad_receiver")
+        if ad_receiver_id:
+            return self.queryset.filter(ad_receiver__id=ad_receiver_id)
+        return self.queryset.all()
 
     def perform_update(self, serializer):
         proposal = self.get_object()
@@ -92,3 +94,21 @@ class ExchangeProposalViewSet(viewsets.ModelViewSet):
         instance.status = status_value
         instance.save()
         return Response(ProposalSerializer(instance).data)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return self.queryset.all()
+
+
+class ConditionViewSet(viewsets.ModelViewSet):
+    queryset = Condition.objects.all()
+    serializer_class = ConditionSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return self.queryset.all()

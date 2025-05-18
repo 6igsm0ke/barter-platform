@@ -1,18 +1,16 @@
 from django.shortcuts import render
 from .models import User
 from .serializers import UserSerializer
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics, permissions, viewsets, decorators
+
 
 # Create your views here.
 
-class UserCreateView(CreateAPIView):
+class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
     
     def post(self,request, *args, **kwargs):
         # Кастомные ошибки
@@ -69,9 +67,14 @@ class UserCreateView(CreateAPIView):
             )
 
 
-class UserViewSet(ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return User.objects.all()
+
+    @decorators.action(detail=False, methods=["get"], permission_classes=permission_classes)
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)

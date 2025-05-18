@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Ad</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <a href="ad_detail.html?id=" id="backLink">&larr; Back</a>
+    <h1>Edit Advertisement</h1>
+
+    <form id="editAdForm">
+      <input type="text" name="title" id="title" placeholder="Title" required><br>
+      <textarea name="description" id="description" placeholder="Description" required></textarea><br>
+      <input type="url" name="image_url" id="image_url" placeholder="Image URL"><br>
+
+      <select name="category" id="categorySelect" required></select><br>
+      <select name="condition" id="conditionSelect" required></select><br>
+
+      <button type="submit">Save Changes</button>
+    </form>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("access");
+    const adId = new URLSearchParams(window.location.search).get("id");
+    document.getElementById("backLink").href += adId;
+
+    async function loadAdData() {
+      const res = await fetch(`http://localhost:8000/api/v1/ads/ads/${adId}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const ad = await res.json();
+      document.getElementById("title").value = ad.title;
+      document.getElementById("description").value = ad.description;
+      document.getElementById("image_url").value = ad.image_url || "";
+    }
+
+    async function loadOptions() {
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const categoryRes = await fetch("http://localhost:8000/api/v1/ads/categories/", { headers });
+      const categoryData = await categoryRes.json();
+      const categorySelect = document.getElementById("categorySelect");
+      (categoryData.results || categoryData).forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        categorySelect.appendChild(opt);
+      });
+
+      const conditionRes = await fetch("http://localhost:8000/api/v1/ads/conditions/", { headers });
+      const conditionData = await conditionRes.json();
+      const conditionSelect = document.getElementById("conditionSelect");
+      (conditionData.results || conditionData).forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        conditionSelect.appendChild(opt);
+      });
+    }
+
+    document.getElementById("editAdForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const body = Object.fromEntries(formData.entries());
+
+      const res = await fetch(`http://localhost:8000/api/v1/ads/ads/${adId}/`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const msg = document.getElementById("message");
+      if (res.ok) {
+        msg.textContent = "Ad updated successfully!";
+        msg.style.color = "green";
+      } else {
+        const err = await res.json();
+        msg.textContent = "Error: " + JSON.stringify(err);
+        msg.style.color = "red";
+      }
+    });
+
+    loadOptions().then(loadAdData);
+  </script>
+</body>
+</html>
