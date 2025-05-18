@@ -12,7 +12,7 @@
       <input type="email" id="email" placeholder="Email" required />
       <input type="password" id="password" placeholder="Password" required />
       <p>Don't have an account? <a href="register.html">Register</a></p>
-    <button onclick="window.location.href='ad_list.html'">Log In</button></form>
+    <button type="submit">Log In</button>
     <p id="message"></p>
   </div>
 
@@ -33,10 +33,13 @@
         const data = await response.json();
 
         if (response.ok) {
-          localStorage.setItem('access', data.access);
-          localStorage.setItem('refresh', data.refresh);
-          message.style.color = 'green';
-          message.innerText = '✅ Login successful!';
+        localStorage.setItem('access', data.access);
+        localStorage.setItem('refresh', data.refresh);
+        message.style.color = 'green';
+        message.innerText = '✅ Login successful!';
+        setTimeout(() => {
+            window.location.href = 'ad_list.html';
+        }, 1000);
         } else {
           message.style.color = 'red';
           message.innerText = '❌ Login failed: ' + (data.detail || 'Unknown error');

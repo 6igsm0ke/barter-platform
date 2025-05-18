@@ -1,208 +1,268 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Ad Detail</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="container">
-    <a href="ad_list.html?id=" id="backLink">&larr; Back</a>
-    <h1>Ad Details</h1>
-    <div class="owner-buttons" id="editDeleteButtons" style="display: none;">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ad Detail</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <a href="ad_list.html?" id="backLink">&larr; Back</a>
+      <h1>Ad Details</h1>
+      <div class="owner-buttons" id="editDeleteButtons" style="display: none">
         <button id="editBtn">Edit Ad</button>
         <button id="deleteBtn">Delete Ad</button>
+      </div>
+
+      <div id="adDetail">Loading ad...</div>
+
+      <div id="ownerSection" style="display: none">
+        <h2>Exchange Proposals</h2>
+        <div id="proposals">Loading proposals...</div>
+      </div>
+
+      <div id="proposalFormContainer">
+        <h2>Send Exchange Proposal</h2>
+        <form id="proposalForm">
+          <label for="ad_sender">Select your Ad:</label><br />
+          <select name="ad_sender" id="adSenderSelect" required></select
+          ><br />
+
+          <label for="comment">Comment:</label><br />
+          <textarea name="comment" required></textarea><br />
+
+          <input type="hidden" name="ad_receiver" id="adReceiverInput" />
+          <button type="submit">Send Proposal</button>
+        </form>
+      </div>
+
+      <div id="message"></div>
     </div>
-    
-    
-    <div id="adDetail">Loading ad...</div>
 
-    <div id="ownerSection" style="display: none;">
-      <h2>Exchange Proposals</h2>
-      <div id="proposals">Loading proposals...</div>
+    <script>
+      const token = localStorage.getItem("access");
+      const adId = new URLSearchParams(window.location.search).get("id");
+      let currentUserId = null;
 
-      
-    </div>
-
-    <div id="proposalFormContainer">
-      <h2>Send Exchange Proposal</h2>
-      <form id="proposalForm">
-        <label for="ad_sender">Select your Ad:</label><br />
-        <select name="ad_sender" id="adSenderSelect" required></select><br />
-
-        <label for="comment">Comment:</label><br />
-        <textarea name="comment" required></textarea><br />
-
-        <input type="hidden" name="ad_receiver" id="adReceiverInput" />
-        <button type="submit">Send Proposal</button>
-      </form>
-    </div>
-
-    <div id="message"></div>
-  </div>
-
-  <script>
-    const token = localStorage.getItem("access");
-    const adId = new URLSearchParams(window.location.search).get("id");
-    let currentUserId = null;
-
-    async function getCurrentUser() {
-      const res = await fetch("http://localhost:8000/api/v1/auth/users/me/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const user = await res.json();
-      currentUserId = user.id;
-    }
-
-    async function fetchAdDetails() {
-      const res = await fetch(`http://localhost:8000/api/v1/ads/ads/${adId}/`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const ad = await res.json();
-
-      document.getElementById("adReceiverInput").value = ad.id;
-
-      const adDiv = document.getElementById("adDetail");
-      adDiv.innerHTML = `
-        <h3>${ad.title}</h3>
-        <p>${ad.description}</p>
-        ${ad.image_url ? `<img src="${ad.image_url}" alt="image" style="max-width: 200px;">` : ""}
-      `;
-
-      if (currentUserId === ad.user) {
-        document.getElementById("ownerSection").style.display = "block";
-        document.getElementById("editDeleteButtons").style.display = "flex";
-        document.getElementById("proposalFormContainer").style.display = "none";
-        fetchProposals();
-
-        document.getElementById("editBtn").onclick = () => {
-          window.location.href = `ad_edit.html?id=${ad.id}`;
-        };
-
-        document.getElementById("deleteBtn").onclick = async () => {
-          if (confirm("Are you sure you want to delete this ad?")) {
-            const res = await fetch(`http://localhost:8000/api/v1/ads/ads/${ad.id}/`, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            if (res.ok) {
-              alert("Ad deleted successfully.");
-              window.location.href = "ad_list.html";
-            } else {
-              alert("Failed to delete ad.");
-            }
-          }
-        };
-      } else {
-        document.getElementById("ownerSection").style.display = "none";
-        document.getElementById("proposalFormContainer").style.display = "block";
+      async function getCurrentUser() {
+        const res = await fetch("http://localhost:8000/api/v1/auth/users/me/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const user = await res.json();
+        currentUserId = user.id;
+        console.log("Current user ID:", currentUserId);
       }
+
+      async function fetchAdDetails() {
+        const res = await fetch(
+          `http://localhost:8000/api/v1/ads/ads/${adId}/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const ad = await res.json();
+        console.log("Ad details:", ad);
+        document.getElementById("adReceiverInput").value = ad.id;
+
+        const adDiv = document.getElementById("adDetail");
+        adDiv.innerHTML = `
+    <h3>${ad.title}</h3>
+    <p>${ad.description}</p>
+    ${
+      ad.image_url
+        ? `<img src="${ad.image_url}" alt="image" style="max-width: 200px;">`
+        : ""
     }
+  `;
 
-    async function fetchUserAds() {
-      const res = await fetch("http://localhost:8000/api/v1/ads/ads/", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      const ads = data.results || data;
-      const select = document.getElementById("adSenderSelect");
-      select.innerHTML = "";
+        const adOwnerId = ad.user
+        console.log("Ad owner ID:", adOwnerId);
 
-      ads.forEach(ad => {
-        const opt = document.createElement("option");
-        opt.value = ad.id;
-        opt.textContent = ad.title;
-        select.appendChild(opt);
-      });
-    }
+        if (currentUserId === adOwnerId) {
+          document.getElementById("ownerSection").style.display = "block";
+          document.getElementById("editDeleteButtons").style.display = "flex";
+          document.getElementById("proposalFormContainer").style.display =
+            "none";
+          fetchProposals();
 
-    async function fetchProposals() {
-      const res = await fetch(`http://localhost:8000/api/v1/ads/proposals/?ad_receiver=${adId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      const proposals = data.results || data;
+          document.getElementById("editBtn").onclick = () => {
+            window.location.href = `ad_edit.html?id=${ad.id}`;
+          };
 
-      const container = document.getElementById("proposals");
-      container.innerHTML = proposals.length
-        ? proposals.map(p => `
-          <div class="proposal" style="margin-bottom: 15px;" data-id="${p.id}">
-            <p><b>${p.ad_sender?.title || "Unknown Ad"}</b> &mdash; <i>${p.status}</i></p>
-            <p style="margin-left: 15px; color: #555;">${p.comment}</p>
+          document.getElementById("deleteBtn").onclick = async () => {
+            if (confirm("Are you sure you want to delete this ad?")) {
+              const res = await fetch(
+                `http://localhost:8000/api/v1/ads/ads/${ad.id}/`,
+                {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              if (res.ok) {
+                alert("Ad deleted successfully.");
+                window.location.href = "ad_list.html";
+              } else {
+                alert("Failed to delete ad.");
+              }
+            }
+          };
+        } else {
+          document.getElementById("ownerSection").style.display = "none";
+          document.getElementById("editDeleteButtons").style.display = "none";
+          document.getElementById("proposalFormContainer").style.display ="block";
+        }
+      }
+        async function refreshToken() {
+            const refresh = localStorage.getItem("refresh");
+            const res = await fetch("http://localhost:8000/api/v1/auth/token/refresh/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+            localStorage.setItem("access", data.access);
+            return data.access;
+            } else {
+            alert("Session expired. Please log in again.");
+            window.location.href = "login.html";
+            }
+        }
 
-            <div class="proposal-actions" style="display: flex; align-items: center; gap: 10px;">
-              <label for="status_${p.id}">Change Status:</label>
-              <select id="status_${p.id}">
-                <option value="pending" ${p.status === "pending" ? "selected" : ""}>Pending</option>
-                <option value="accepted" ${p.status === "accepted" ? "selected" : ""}>Accepted</option>
-                <option value="rejected" ${p.status === "rejected" ? "selected" : ""}>Rejected</option>
-              </select>
-              <button type="button" class="update-btn" onclick="updateProposalStatus(${p.id})" style="padding: 6px 10px; font-size: 12px;">Update</button>
+      async function fetchUserAds() {
+        const res = await fetch("http://localhost:8000/api/v1/ads/ads/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        const ads = data.results || data;
+        const select = document.getElementById("adSenderSelect");
+        select.innerHTML = "";
+
+        ads
+          .filter((ad) => ad.id !== parseInt(adId))
+          .forEach((ad) => {
+            const opt = document.createElement("option");
+            opt.value = ad.id;
+            opt.textContent = ad.title;
+            select.appendChild(opt);
+          });
+      }
+
+      async function fetchProposals() {
+        const res = await fetch(
+          `http://localhost:8000/api/v1/ads/proposals/?ad_receiver=${adId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await res.json();
+        const proposals = data.results || data;
+
+        const container = document.getElementById("proposals");
+        container.innerHTML = proposals.length
+          ? proposals
+              .map(
+                (p) => `
+            <div class="proposal" style="margin-bottom: 15px;" data-id="${
+              p.id
+            }">
+                <p><b>${p.ad_sender?.title || "Unknown Ad"}</b> &mdash; <i>${
+                  p.status
+                }</i></p>
+                <p style="margin-left: 15px; color: #555;">${p.comment}</p>
+
+                <div class="proposal-actions" style="display: flex; align-items: center; gap: 10px;">
+                <label for="status_${p.id}">Change Status:</label>
+                <select id="status_${p.id}">
+                    <option value="pending" ${
+                      p.status === "pending" ? "selected" : ""
+                    }>Pending</option>
+                    <option value="accepted" ${
+                      p.status === "accepted" ? "selected" : ""
+                    }>Accepted</option>
+                    <option value="rejected" ${
+                      p.status === "rejected" ? "selected" : ""
+                    }>Rejected</option>
+                </select>
+                <button type="button" class="update-btn" onclick="updateProposalStatus(${
+                  p.id
+                })" style="padding: 6px 10px; font-size: 12px;">Update</button>
+                </div>
             </div>
-          </div>
-        `).join("")
-        : "<p>No proposals yet.</p>";
-    }
+            `
+              )
+              .join("")
+          : "<p>No proposals yet.</p>";
+      }
 
-    async function updateProposalStatus(proposalId) {
-      const select = document.getElementById(`status_${proposalId}`);
-      const newStatus = select.value;
+      async function updateProposalStatus(proposalId) {
+        const select = document.getElementById(`status_${proposalId}`);
+        const newStatus = select.value;
 
-      try {
-        const res = await fetch(`http://localhost:8000/api/v1/ads/proposals/${proposalId}/`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status: newStatus }),
+        try {
+          const res = await fetch(
+            `http://localhost:8000/api/v1/ads/proposals/${proposalId}/`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ status: newStatus }),
+            }
+          );
+
+          if (res.ok) {
+            alert("Status updated!");
+            fetchProposals();
+          } else {
+            const err = await res.json();
+            alert("Error: " + JSON.stringify(err));
+          }
+        } catch (err) {
+          alert("Network error");
+          console.error(err);
+        }
+      }
+
+      document
+        .getElementById("proposalForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const formData = new FormData(e.target);
+          const body = Object.fromEntries(formData.entries());
+          console.log("Sending proposal body:", body);
+
+          const res = await fetch(
+            "http://localhost:8000/api/v1/ads/proposals/",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify(body),
+            }
+          );
+
+          const result = await res.json();
+          const message = document.getElementById("message");
+
+          if (res.ok) {
+            message.textContent = "Proposal sent!";
+            message.style.color = "green";
+            e.target.reset();
+            if (currentUserId === parseInt(body.ad_receiver)) fetchProposals();
+          } else {
+            message.textContent = "Error: " + JSON.stringify(result);
+            message.style.color = "red";
+          }
         });
 
-        if (res.ok) {
-          alert("Status updated!");
-          fetchProposals();
-        } else {
-          const err = await res.json();
-          alert("Error: " + JSON.stringify(err));
-        }
-      } catch (err) {
-        alert("Network error");
-        console.error(err);
-      }
-    }
-
-    document.getElementById("proposalForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const body = Object.fromEntries(formData.entries());
-
-      const res = await fetch("http://localhost:8000/api/v1/ads/proposals/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
+      getCurrentUser().then(() => {
+        fetchAdDetails();
+        fetchUserAds();
       });
-
-      const result = await res.json();
-      const message = document.getElementById("message");
-
-      if (res.ok) {
-        message.textContent = "Proposal sent!";
-        message.style.color = "green";
-        e.target.reset();
-        if (currentUserId === parseInt(body.ad_receiver)) fetchProposals();
-      } else {
-        message.textContent = "Error: " + JSON.stringify(result);
-        message.style.color = "red";
-      }
-    });
-
-    getCurrentUser().then(() => {
-      fetchAdDetails();
-      fetchUserAds();
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
